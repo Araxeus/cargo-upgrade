@@ -1,6 +1,7 @@
 use std::io::{BufRead, BufReader, Result};
 
 use std::process::{Command, Stdio};
+use std::time::Instant;
 
 use colored::Colorize;
 use spinoff::{spinners, Color, Spinner};
@@ -139,6 +140,8 @@ pub fn show_outdated_packages() -> Result<()> {
 pub fn update_package(name: &str) -> Result<()> {
     let mut spinner = Spinner::new(spinners::Dots, "Loading...", Color::Cyan);
 
+    let start_time = Instant::now();
+
     let mut cmd = Command::new("cargo")
         .args(["install", name, "--locked"])
         .stderr(Stdio::piped())
@@ -155,7 +158,13 @@ pub fn update_package(name: &str) -> Result<()> {
         spinner.update_text(last_line.trim().to_string());
     }
 
-    spinner.success(last_line.trim());
+    cmd.wait()?;
+
+    spinner.success(&format!(
+        "{} [{:.2?}]",
+        last_line.trim(),
+        start_time.elapsed()
+    ));
 
     Ok(())
 }
@@ -171,7 +180,7 @@ pub fn update_all_packages() -> Result<()> {
     for package in packages {
         let formatted = package.to_formatted();
         println!(
-            "📦 Trying to upgrade {} from {} to {}",
+            "\nUpgrading {} from {} to {}",
             formatted.name,
             formatted.version,
             formatted.new_version.unwrap()
