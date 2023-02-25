@@ -158,13 +158,15 @@ pub fn update_package(name: &str) -> Result<()> {
         spinner.update_text(last_line.trim().to_string());
     }
 
-    cmd.wait()?;
+    let status_code = cmd.wait()?;
 
-    spinner.success(&format!(
-        "{} [{:.2?}]",
-        last_line.trim(),
-        start_time.elapsed()
-    ));
+    let status = format!("{} [{:.2?}]", last_line.trim(), start_time.elapsed());
+
+    match status_code.code().unwrap_or(1) {
+        0 => spinner.success(&status),
+        1 => spinner.fail(&status),
+        _ => spinner.warn(&status),
+    }
 
     Ok(())
 }
@@ -177,15 +179,33 @@ pub fn update_package(name: &str) -> Result<()> {
 pub fn update_all_packages() -> Result<()> {
     let packages = get_outdated_packages()?;
 
+    let mut done_one = false;
+
     for package in packages {
+        if package.new_version.is_none() {
+            continue;
+        }
         let formatted = package.to_formatted();
+        if done_one {
+            println!();
+        }
+        if package.name == env!("CARGO_PKG_NAME") {
+            println!(
+                "{name} is outdated [{old_v} -> {new_v}] but it cannot update itself.\nRun `cargo install {name}` to update it",
+                name = formatted.name,
+                old_v = formatted.version,
+                new_v = formatted.new_version.unwrap()
+            );
+            continue;
+        }
         println!(
-            "\nUpgrading {} from {} to {}",
+            "Upgrading {} from {} to {}",
             formatted.name,
             formatted.version,
             formatted.new_version.unwrap()
         );
         update_package(&package.name)?;
+        done_one = true;
     }
 
     Ok(())
