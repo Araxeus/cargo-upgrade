@@ -1,4 +1,5 @@
-use std::io::Result;
+use std::io::{BufRead, BufReader, Result};
+
 use std::process::{Command, Stdio};
 
 use colored::Colorize;
@@ -128,8 +129,6 @@ pub fn show_outdated_packages() -> Result<()> {
 
     Ok(())
 }
-
-use std::io::{BufRead, BufReader};
 
 /// # Errors
 ///
