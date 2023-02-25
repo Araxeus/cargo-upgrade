@@ -1,0 +1,51 @@
+name: Check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master]
+
+jobs:
+  analyze:
+    name: Run checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install clippy&fmt sarif
+        run: cargo install clippy-sarif sarif-fmt
+
+      - name: Cargo check
+        run: cargo check
+
+      - name: Rustfmt check
+        run: cargo fmt --all --check -v
+
+
+      - name: Create Clippy output job
+        if: success() || failure() # run regardless of prior step
+        uses: actions-rs-plus/clippy-check@main
+        with:
+          args: --all-targets --all-features -- -W clippy::pedantic -W clippy::cargo -W clippy::nursery -D warnings
+
+      - name: Clippy check
+        run: cargo clippy
+          --all-targets
+          --all-features
+          --message-format=json
+          -- -W clippy::pedantic -W clippy::cargo -W clippy::nursery | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+        continue-on-error: true
+
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: rust-clippy-results.sarif
+          wait-for-processing: true
