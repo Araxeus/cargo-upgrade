@@ -160,9 +160,11 @@ pub fn update_package(name: &str) -> Result<()> {
 
     cmd.wait()?;
 
-    spinner.success(
-        &format!("{} [{:.2?}]", last_line.trim(), start_time.elapsed())
-    );
+    spinner.success(&format!(
+        "{} [{:.2?}]",
+        last_line.trim(),
+        start_time.elapsed()
+    ));
 
     Ok(())
 }
