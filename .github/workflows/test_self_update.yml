@@ -1,0 +1,41 @@
+name: Test self_update
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-upgrade-command@0.1.0
+        run: cargo install cargo-upgrade-command@0.1.0
+
+      - run: cargo upgrade v
+
+      - name: get cargo-upgrade-command current_version
+        run: echo "current_version=$(cargo upgrade v)" >> $GITHUB_ENV
+
+      - name: Verify current version of cargo-upgrade-command
+        if: env.current_version != 'cargo-upgrade-command v0.1.0'
+        run: "echo \"Error: Current version '${{env.current_version}}' does not match expected version 'cargo-upgrade-command v0.1.0'\" && exit 1"
+
+      - name: Upgrade cargo-upgrade-command to v0.2.0
+        run: cargo run u
+
+      - name: Wait for cargo-upgrade-command to be upgraded
+        run: sleep 90 || timeout 90
+
+      - name: get cargo-upgrade-command new_version
+        run: echo "upgraded_version=(cargo upgrade v)" >> $GITHUB_ENV
+
+      - name: Verify upgraded version of cargo-upgrade-command
+        if: env.upgraded_version != 'cargo-upgrade-command v0.2.0'
+        run: "echo \"Error: Upgraded version '${{env.upgraded_version}}' does not match expected version 'cargo-upgrade-command v0.2.0'\" && exit 1"
