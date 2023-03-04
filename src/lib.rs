@@ -5,6 +5,7 @@ use std::time::Instant;
 
 use colored::Colorize;
 use spinoff::{spinners, Color, Spinner};
+use tiny_native_scheduler::execute_command_in_x_minutes;
 
 pub struct Package {
     name: String,
@@ -181,6 +182,8 @@ pub fn update_all_packages() -> Result<()> {
 
     let mut done_one = false;
 
+    let mut this_is_outdated = false;
+
     for package in packages {
         if package.new_version.is_none() {
             continue;
@@ -191,11 +194,12 @@ pub fn update_all_packages() -> Result<()> {
         }
         if package.name == env!("CARGO_PKG_NAME") {
             println!(
-                "{name} is outdated [{old_v} -> {new_v}] but it cannot update itself.\nRun `cargo install {name}` to update it",
+                "{name} is outdated [{old_v} -> {new_v}] and will be scheduled for upgrade one minute after process exit",
                 name = formatted.name,
                 old_v = formatted.version,
                 new_v = formatted.new_version.unwrap()
             );
+            this_is_outdated = true;
             continue;
         }
         println!(
@@ -206,6 +210,15 @@ pub fn update_all_packages() -> Result<()> {
         );
         update_package(&package.name)?;
         done_one = true;
+    }
+
+    if this_is_outdated {
+        execute_command_in_x_minutes(
+            &format!("cargo install {} --locked", env!("CARGO_PKG_NAME")),
+            1,
+            "Upgrade cargo-update",
+        )
+        .ok();
     }
 
     Ok(())

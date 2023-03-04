@@ -18,3 +18,4 @@ path = "src/main.rs"
 [dependencies]
 colored = "2.0.0"
 spinoff = "0.7.0"
+tiny-native-scheduler = "0.1.1"
