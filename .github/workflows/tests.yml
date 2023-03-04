@@ -5,6 +5,7 @@ on: [push]
 jobs:
   test_self_update:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -27,13 +28,37 @@ jobs:
 
       - name: Verify current version of cargo-upgrade-command
         if: env.current_version != 'cargo-upgrade-command v0.1.0'
-        run: "echo \"Error: Current version '${{env.current_version}}' does not match expected version 'cargo-upgrade-command v0.1.0'\" && exit 1"
+        run: 'echo "Error: Current version ''${{env.current_version}}'' does not match expected version ''cargo-upgrade-command v0.1.0''" && exit 1'
+
+      - name: Install `at` on ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install at
+
+      - name: Install `atrun` on macos
+        # https://apple.stackexchange.com/questions/343110/terminal-how-to-use-at
+        if: matrix.os == 'macos-latest'
+        run: sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.atrun.plist
+
+      - name: On unix, print `at --version` to verify `at` is installed
+        if: matrix.os != 'windows-latest'
+        continue-on-error: true
+        run: man at && at --version
 
       - name: Upgrade cargo-upgrade-command to v0.2.0
         run: cargo run u
 
+      - name: Find the task on windows
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: schtasks /Query /tn "Upgrade cargo-update"
+
       - name: Wait for cargo-upgrade-command to be upgraded
         run: sleep 90 || timeout 90
+
+      - name: Find the task on windows
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: schtasks /Query /tn "Upgrade cargo-update"
 
       - name: get cargo-upgrade-command new_version
         run: echo "upgraded_version=$(cargo upgrade v)" >> $GITHUB_ENV
@@ -41,4 +66,4 @@ jobs:
 
       - name: Verify upgraded version of cargo-upgrade-command
         if: env.upgraded_version != 'cargo-upgrade-command v0.2.0'
-        run: "echo \"Error: Upgraded version '${{env.upgraded_version}}' does not match expected version 'cargo-upgrade-command v0.2.0'\" && exit 1"
+        run: 'echo "Error: Upgraded version ''${{env.upgraded_version}}'' does not match expected version ''cargo-upgrade-command v0.2.0''" && exit 1'
