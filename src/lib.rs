@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::rename;
+use std::fs::{create_dir, rename};
 use std::io::{BufRead, BufReader, Result};
 
 use std::process::{Command, Stdio};
@@ -192,6 +192,10 @@ pub fn update_all_packages() -> Result<()> {
             println!();
         }
         if package.name == env!("CARGO_PKG_NAME") {
+            if cfg!(debug_assertions) {
+                println!("Skipping self update in debug mode");
+                continue;
+            }
             move_executable_to_temp_folder()?;
         }
         println!(
@@ -212,12 +216,17 @@ fn move_executable_to_temp_folder() -> Result<()> {
     let temp_dir = env::temp_dir();
 
     // Generate a unique file name for the executable in the temp directory
-    let mut cloned_exe_path = temp_dir.join(current_exe.file_name().unwrap());
+    let cloned_exe_dir = temp_dir.join(env!("CARGO_PKG_NAME"));
+    if !cloned_exe_dir.exists() {
+        create_dir(&cloned_exe_dir)?;
+    }
+
+    let mut cloned_exe_path = cloned_exe_dir.join(current_exe.file_name().unwrap());
     let mut i = 0;
     while cloned_exe_path.exists() {
         i += 1;
 
-        cloned_exe_path = temp_dir.join(format!(
+        cloned_exe_path = cloned_exe_dir.join(format!(
             "{}-{i}",
             current_exe.file_stem().unwrap().to_str().unwrap()
         ));
