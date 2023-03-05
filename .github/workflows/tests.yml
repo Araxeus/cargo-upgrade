@@ -1,0 +1,51 @@
+name: Test self-update
+
+on: workflow_dispatch
+
+jobs:
+  test_self_update:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-version-util
+        run: cargo install cargo-version-util
+
+      - name: Install cargo-upgrade-command
+        run: cargo install cargo-upgrade-command
+
+      - name: save cargo-upgrade-command version
+        run: echo "current_version=$(cargo upgrade v)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Change version to v0.1.0
+        run: cargo version-util set-version 0.1.0
+
+      - name: install cargo-upgrade-command@0.1.0
+        run: cargo install --path .
+
+      - name: get cargo-upgrade-command version after install
+        run: echo "installed_version=$(cargo upgrade v)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Verify installed version of cargo-upgrade-command
+        if: env.installed_version != 'cargo-upgrade-command v0.1.0'
+        run: 'echo "Error: installed version ''${{env.installed_version}}'' does not match expected version ''cargo-upgrade-command v0.1.0''" && exit 1'
+
+      - name: Upgrade cargo-upgrade-command
+        run: cargo upgrade
+
+      - name: get cargo-upgrade-command new_version
+        run: echo "upgraded_version=$(cargo upgrade v)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Verify upgraded version of cargo-upgrade-command
+        if: env.upgraded_version != env.current_version
+        run: 'echo "Error: Upgraded version ''${{env.upgraded_version}}'' does not match expected current version ''${{env.current_version}}''" && exit 1'

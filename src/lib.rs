@@ -1,3 +1,5 @@
+use std::env;
+use std::fs::{create_dir, remove_dir_all, rename};
 use std::io::{BufRead, BufReader, Result};
 
 use std::process::{Command, Stdio};
@@ -190,13 +192,11 @@ pub fn update_all_packages() -> Result<()> {
             println!();
         }
         if package.name == env!("CARGO_PKG_NAME") {
-            println!(
-                "{name} is outdated [{old_v} -> {new_v}] but it cannot update itself.\nRun `cargo install {name}` to update it",
-                name = formatted.name,
-                old_v = formatted.version,
-                new_v = formatted.new_version.unwrap()
-            );
-            continue;
+            if cfg!(debug_assertions) {
+                println!("Skipping self update in debug mode");
+                continue;
+            }
+            move_executable_to_temp_folder()?;
         }
         println!(
             "Upgrading {} from {} to {}",
@@ -207,6 +207,38 @@ pub fn update_all_packages() -> Result<()> {
         update_package(&package.name)?;
         done_one = true;
     }
+
+    Ok(())
+}
+
+fn move_executable_to_temp_folder() -> Result<()> {
+    let current_exe = env::current_exe()?;
+    let temp_dir = env::temp_dir();
+
+    // Generate a unique file name for the executable in the temp directory
+    let cloned_exe_dir = temp_dir.join(env!("CARGO_PKG_NAME"));
+    if cloned_exe_dir.exists() {
+        remove_dir_all(&cloned_exe_dir)?;
+    }
+
+    create_dir(&cloned_exe_dir)?;
+
+    let mut cloned_exe_path = cloned_exe_dir.join(current_exe.file_name().unwrap());
+    let mut i = 0;
+    while cloned_exe_path.exists() {
+        i += 1;
+
+        cloned_exe_path = cloned_exe_dir.join(format!(
+            "{}-{i}",
+            current_exe.file_stem().unwrap().to_str().unwrap()
+        ));
+        if cfg!(windows) {
+            cloned_exe_path.set_extension("exe");
+        }
+    }
+
+    // Move the current executable to the temp directory
+    rename(&current_exe, &cloned_exe_path)?;
 
     Ok(())
 }
