@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::{create_dir, rename};
+use std::fs::{create_dir, remove_dir_all, rename};
 use std::io::{BufRead, BufReader, Result};
 
 use std::process::{Command, Stdio};
@@ -217,9 +217,11 @@ fn move_executable_to_temp_folder() -> Result<()> {
 
     // Generate a unique file name for the executable in the temp directory
     let cloned_exe_dir = temp_dir.join(env!("CARGO_PKG_NAME"));
-    if !cloned_exe_dir.exists() {
-        create_dir(&cloned_exe_dir)?;
+    if cloned_exe_dir.exists() {
+        remove_dir_all(&cloned_exe_dir)?;
     }
+
+    create_dir(&cloned_exe_dir)?;
 
     let mut cloned_exe_path = cloned_exe_dir.join(current_exe.file_name().unwrap());
     let mut i = 0;
