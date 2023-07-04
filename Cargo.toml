@@ -16,5 +16,5 @@ name = "cargo-upgrade"
 path = "src/main.rs"
 
 [dependencies]
-colored = "2.0.0"
+colored = "2.0.1"
 spinoff = "0.7.0"
