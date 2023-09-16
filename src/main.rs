@@ -3,7 +3,7 @@ use std::io::Result;
 use cargo_upgrade_command::{show_outdated_packages, update_all_packages};
 
 fn main() -> Result<()> {
-    let arg = std::env::args().rev().next().unwrap_or_else(|| {
+    let arg = std::env::args().next_back().unwrap_or_else(|| {
         print_help();
         std::process::exit(1);
     });
