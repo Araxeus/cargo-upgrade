@@ -12,13 +12,13 @@ jobs:
     name: Run checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Install clippy&fmt sarif
         run: cargo install clippy-sarif sarif-fmt
@@ -45,7 +45,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@b8d3b6e8af63cde30bdc382c0bc28114f4346c88 # v2.28.1
         with:
           sarif_file: rust-clippy-results.sarif
           wait-for-processing: true
