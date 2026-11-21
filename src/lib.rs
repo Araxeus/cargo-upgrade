@@ -16,7 +16,7 @@ pub struct Package {
 
 impl Package {
     fn to_formatted(&self) -> Self {
-        let name = self.name.to_string();
+        let name = self.name.clone();
         let old_version = format!("v{}", self.version).bright_red();
         let new_version = format!("v{}", self.new_version.as_ref().unwrap()).bright_green();
 
@@ -95,7 +95,7 @@ pub fn get_outdated_packages() -> Result<Vec<Package>> {
 
         if latest_version != package.version {
             outdated_packages.push(Package {
-                name: package.name.to_string(),
+                name: package.name.clone(),
                 version: package.version.clone(),
                 new_version: Some(latest_version),
             });
