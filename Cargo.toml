@@ -17,4 +17,4 @@ path = "src/main.rs"
 
 [dependencies]
 colored = "2.0.0"
-spinoff = "0.7.0"
+spinoff = "0.8.0"
